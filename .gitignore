@@ -3,3 +3,5 @@ alerts.log
 __pycache__/
 *.pyc
 images.jfif
+SECRETS.txt
+seen_items.json

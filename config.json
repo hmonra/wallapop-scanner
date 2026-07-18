@@ -1,0 +1,105 @@
+{
+  "check_interval_seconds": 300,
+  "location": {
+    "latitude": 40.4168,
+    "longitude": -3.7038,
+    "country_code": "ES"
+  },
+  "searches": [
+    {
+      "name": "PS4 rotos/baratos",
+      "keywords": [
+        "mando ps4",
+        "mando ps4 roto",
+        "ps4 drift",
+        "mando ps4 piezas",
+        "mando ps4 averiado"
+      ],
+      "min_price": 1,
+      "max_price": 15,
+      "order_by": "newest"
+    },
+    {
+      "name": "PS5 rotos/baratos",
+      "keywords": [
+        "mando ps5",
+        "mando ps5 roto",
+        "ps5 drift",
+        "mando dualsense roto",
+        "mando dualsense piezas"
+      ],
+      "min_price": 5,
+      "max_price": 30,
+      "order_by": "newest"
+    }
+  ],
+  "filters": {
+    "max_new_account_age_days": 30,
+    "min_seller_published": 0,
+    "require_top_profile_or_sales": false,
+    "exclude_keywords": [
+      "envio gratis",
+      "nuevo",
+      "sellado",
+      "wii",
+      "switch",
+      "xbox",
+      "cargador",
+      "soporte",
+      "base",
+      "fundas",
+      "funda",
+      "stand",
+      "volante",
+      "pistola",
+      "zapper",
+      "ps3",
+      "playstation 3",
+      "move",
+      "motion",
+      "lote",
+      "compatible",
+      "alternativo",
+      "generico",
+      "genuino",
+      "marca",
+      "tmr",
+      "cambia",
+      "cambio los",
+      "reparacion",
+      "repara",
+      "cambiamos",
+      "joystick por",
+      "cambia joystick",
+      "reacondicionado",
+      "no oficial",
+      "no original"
+    ],
+    "must_mention": [
+      "mando",
+      "dualshock",
+      "dualsense",
+      "control",
+      "joystick"
+    ],
+    "require_original": true,
+    "require_keywords_in_title": [],
+    "max_item_age_hours_to_notify": 72
+  },
+  "notifications": {
+    "console": true,
+    "log_file": "alerts.log",
+    "telegram": {
+      "enabled": true,
+      "bot_token": "8657645526:AAEpjZPJEIQ1WiE-uue3t4bN5qXifBZGybc",
+      "chat_id": "179958235"
+    },
+    "desktop": true
+  },
+  "state_file": "seen_items.json",
+  "initial_send_count": 10,
+  "heartbeat": {
+    "enabled": true,
+    "every_n_passes": 6
+  }
+}

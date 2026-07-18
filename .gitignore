@@ -1,0 +1,5 @@
+telegram.log
+alerts.log
+__pycache__/
+*.pyc
+images.jfif

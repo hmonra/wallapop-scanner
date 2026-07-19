@@ -524,14 +524,19 @@ def run_once(cfg, initial=False):
     if len(seen) > 5000:
         seen = set(list(seen)[-3000:])
     state["seen"] = list(seen)
-    pass_count = state.get("pass_count", 0) + 1
+
+    # Heartbeat: contamos SOLO pasadas sin novedad. Si hay anuncios nuevos,
+    # reiniciamos el contador a 0 (no queremos latidos tras actividad real).
+    hb = cfg.get("heartbeat", {})
+    every = hb.get("every_n_passes", 6)
+    if new_count == 0:
+        pass_count = state.get("pass_count", 0) + 1
+    else:
+        pass_count = 0
     state["pass_count"] = pass_count
     save_state(cfg.get("state_file", "seen_items.json"), state)
 
-    # Heartbeat: si no hubo novedades, avisar cada N pasadas (solo debug)
-    hb = cfg.get("heartbeat", {})
     if hb.get("enabled") and new_count == 0:
-        every = hb.get("every_n_passes", 6)
         if pass_count % every == 0:
             msg = (f"💓 <b>Wallapop Scanner - latido</b>\n"
                    f"Pasada #{pass_count} realizada. 0 mandos nuevos encontrados.\n"

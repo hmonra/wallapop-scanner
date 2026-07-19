@@ -247,6 +247,33 @@ def format_age(age_h):
     return f"hace {hours} h {minutes} min"
 
 
+def haversine_km(lat1, lon1, lat2, lon2):
+    """Distancia en km entre dos coords usando la formula de Haversine."""
+    import math
+    r = 6371.0
+    p1 = math.radians(lat1)
+    p2 = math.radians(lat2)
+    dp = math.radians(lat2 - lat1)
+    dl = math.radians(lon2 - lon1)
+    a = math.sin(dp / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dl / 2) ** 2
+    return r * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+
+def distance_from_user(item_loc, user_loc):
+    """Devuelve '~NNN km' o '' si falta alguna coord."""
+    try:
+        lat = float(item_loc.get("latitude"))
+        lon = float(item_loc.get("longitude"))
+        ulat = float(user_loc.get("latitude"))
+        ulon = float(user_loc.get("longitude"))
+        km = haversine_km(lat, lon, ulat, ulon)
+        if km < 1:
+            return "a menos de 1 km"
+        return f"a ~{int(round(km))} km"
+    except (TypeError, ValueError, AttributeError):
+        return ""
+
+
 def resolve_telegram_chat_id(token):
     """Intenta obtener el chat_id del ultimo mensaje recibido por el bot."""
     try:
@@ -326,7 +353,7 @@ def notify(cfg, items_to_report, search_name):
         lines.append(f"  {it['title']}")
         lines.append(f"  Precio: {it['price']} EUR  |  {it['location']}")
         lines.append(f"  Vendedor: {it['seller']}  ({it['seller_info']})")
-        lines.append(f"  Publicado: {it['age']}  |  {it['shipping']}  |  {it['interest']}")
+        lines.append(f"  Publicado: {it['age']}  |  {it['shipping']}  |  {it['interest']}  |  {it['distance']}")
         lines.append(f"  {it['url']}")
 
     msg = "\n".join(lines)
@@ -359,7 +386,7 @@ def notify(cfg, items_to_report, search_name):
         tg = (
             f"{header}\n"
             f"🔔 <a href=\"{it['url']}\">{it['title']}</a>\n"
-            f"💶 {it['price']} EUR  📍 {it['location']}\n"
+            f"💶 {it['price']} EUR  📍 {it['location']} ({it['distance']})\n"
             f"👤 {it['seller']} ({it['seller_info']}) · {it['age']} · {it['shipping']} · {it['interest']}"
         )
         if len(tg) > 4000:
@@ -485,6 +512,10 @@ def run_once(cfg, initial=False):
             interest_tag = f"💬 {conv} contactos" + (f" · 👀 {views} vistas" if views else "")
             time.sleep(0.4)
 
+            # Distancia desde la ubicacion base del usuario (config.location)
+            user_loc = cfg.get("location", {})
+            dist_tag = distance_from_user(it.get("location", {}), user_loc)
+
             seen.add(it["id"])
             new_count += 1
             it_url = f"https://es.wallapop.com/item/{it.get('web_slug', it['id'])}"
@@ -498,6 +529,7 @@ def run_once(cfg, initial=False):
                 "url": it_url,
                 "shipping": shipping_tag,
                 "interest": interest_tag,
+                "distance": dist_tag,
             }
             if not hasattr(run_once, "_reports"):
                 run_once._reports = {}

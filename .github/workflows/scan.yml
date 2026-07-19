@@ -36,4 +36,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GIST_TOKEN }}
           WALLAPOP_GIST_ID: ${{ secrets.WALLAPOP_GIST_ID }}
+          PYTHONUNBUFFERED: "1"
         run: python wallapop_scanner.py

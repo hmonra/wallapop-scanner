@@ -20,6 +20,7 @@ import json
 import os
 import sys
 import time
+import threading
 from datetime import datetime, timezone
 
 if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
@@ -323,7 +324,7 @@ def send_telegram(cfg, message):
     # Silencio nocturno: de 22:00 a 08:00 (hora peninsular ES) mandamos sin
     # sonido/vibracion (disable_notification). El mensaje igual aparece en
     # pantalla si tienes el movil en mano, pero no te despierta.
-    es_hour = (datetime.now(timezone.utc()).hour + 2) % 24
+    es_hour = (datetime.now(timezone.utc).hour + 2) % 24
     silent = 22 <= es_hour or es_hour < 8
     last_err = None
     for attempt in range(3):
@@ -616,11 +617,25 @@ def main():
         return
 
     first = True
+    # Watchdog: si una pasada se bloquea (red colgada, etc.) mas de este tiempo,
+    # forzamos la salida del proceso para que GitHub Actions lo reinicie en el
+    # proximo ciclo en vez de dejar un run zombie "in progress" para siempre.
+    PASS_TIMEOUT = 180
+
+    def _watchdog():
+        print(f"[!] Watchdog: pasada bloqueada > {PASS_TIMEOUT}s. Abortando proceso.")
+        os._exit(1)
+
     while True:
+        timer = threading.Timer(PASS_TIMEOUT, _watchdog)
+        timer.daemon = True
+        timer.start()
         try:
             run_once(cfg, initial=(first and args.initial))
         except Exception as e:
             print(f"[!] Error inesperado: {e}")
+        finally:
+            timer.cancel()
         first = False
         print(f"[*] Esperando {interval}s...\n")
         time.sleep(interval)

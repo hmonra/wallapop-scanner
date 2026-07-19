@@ -320,12 +320,18 @@ def send_telegram(cfg, message):
                 pass
     if not chat_id:
         return False
+    # Silencio nocturno: de 22:00 a 08:00 (hora peninsular ES) mandamos sin
+    # sonido/vibracion (disable_notification). El mensaje igual aparece en
+    # pantalla si tienes el movil en mano, pero no te despierta.
+    es_hour = (datetime.now(timezone.utc()).hour + 2) % 24
+    silent = 22 <= es_hour or es_hour < 8
     last_err = None
     for attempt in range(3):
         try:
             r = requests.post(
                 f"https://api.telegram.org/bot{token}/sendMessage",
-                json={"chat_id": chat_id, "text": message, "parse_mode": "HTML"},
+                json={"chat_id": chat_id, "text": message, "parse_mode": "HTML",
+                      "disable_notification": silent},
                 timeout=10,
             )
             j = r.json()
@@ -385,9 +391,13 @@ def notify(cfg, items_to_report, search_name):
     for it in items_to_report:
         tg = (
             f"{header}\n"
+            f"────────────────────────────\n"
             f"🔔 <a href=\"{it['url']}\">{it['title']}</a>\n"
-            f"💶 {it['price']} EUR  📍 {it['location']} ({it['distance']})\n"
-            f"👤 {it['seller']} ({it['seller_info']}) · {it['age']} · {it['shipping']} · {it['interest']}"
+            f"💶 {it['price']} EUR   📍 {it['location']} ({it['distance']})\n"
+            f"{it['shipping']}   ·   {it['interest']}\n"
+            f"👤 {it['seller']} · {it['seller_info']}\n"
+            f"🕒 {it['age']}\n"
+            f"🔗 {it['url']}"
         )
         if len(tg) > 4000:
             tg = tg[:3990] + "..."

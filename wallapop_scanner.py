@@ -233,6 +233,20 @@ def item_age_hours(created_at_ms, now_ms):
     return (now_ms - created_at_ms) / 3600000.0
 
 
+def format_age(age_h):
+    """Convierte horas (float) a texto legible: 'hace 14 h 6 min'."""
+    total_min = int(age_h * 60)
+    if total_min < 1:
+        return "hace menos de 1 min"
+    if total_min < 60:
+        return f"hace {total_min} min"
+    hours = total_min // 60
+    minutes = total_min % 60
+    if minutes == 0:
+        return f"hace {hours} h"
+    return f"hace {hours} h {minutes} min"
+
+
 def resolve_telegram_chat_id(token):
     """Intenta obtener el chat_id del ultimo mensaje recibido por el bot."""
     try:
@@ -461,7 +475,7 @@ def run_once(cfg, initial=False):
                 "location": it.get("location", {}).get("city", "??"),
                 "seller": seller_name,
                 "seller_info": seller_info,
-                "age": f"hace {age_h:.1f} h",
+                "age": format_age(age_h),
                 "url": it_url,
             }
             if not hasattr(run_once, "_reports"):

@@ -326,7 +326,7 @@ def notify(cfg, items_to_report, search_name):
         lines.append(f"  {it['title']}")
         lines.append(f"  Precio: {it['price']} EUR  |  {it['location']}")
         lines.append(f"  Vendedor: {it['seller']}  ({it['seller_info']})")
-        lines.append(f"  Publicado: {it['age']}  |  {it['shipping']}")
+        lines.append(f"  Publicado: {it['age']}  |  {it['shipping']}  |  {it['interest']}")
         lines.append(f"  {it['url']}")
 
     msg = "\n".join(lines)
@@ -360,7 +360,7 @@ def notify(cfg, items_to_report, search_name):
             f"{header}\n"
             f"🔔 <a href=\"{it['url']}\">{it['title']}</a>\n"
             f"💶 {it['price']} EUR  📍 {it['location']}\n"
-            f"👤 {it['seller']} ({it['seller_info']}) · {it['age']} · {it['shipping']}"
+            f"👤 {it['seller']} ({it['seller_info']}) · {it['age']} · {it['shipping']} · {it['interest']}"
         )
         if len(tg) > 4000:
             tg = tg[:3990] + "..."
@@ -472,6 +472,19 @@ def run_once(cfg, initial=False):
             allows_shipping = ship.get("user_allows_shipping", True) if isinstance(ship, dict) else True
             shipping_tag = "📦 Envío" if allows_shipping else "🤝 Solo en persona"
 
+            # Interes en el anuncio: la API individual devuelve 'counters' con
+            # views/favorites/conversations (esto es lo que muestra la extension
+            # Wallapopchattrack). Solo lo consultamos para anuncios nuevos.
+            conv = views = 0
+            detail = _get_json(f"{API_BASE}/items/{it['id']}")
+            if isinstance(detail, dict):
+                c = detail.get("counters", {})
+                if isinstance(c, dict):
+                    conv = c.get("conversations", 0) or 0
+                    views = c.get("views", 0) or 0
+            interest_tag = f"💬 {conv} contactos" + (f" · 👀 {views} vistas" if views else "")
+            time.sleep(0.4)
+
             seen.add(it["id"])
             new_count += 1
             it_url = f"https://es.wallapop.com/item/{it.get('web_slug', it['id'])}"
@@ -484,6 +497,7 @@ def run_once(cfg, initial=False):
                 "age": format_age(age_h),
                 "url": it_url,
                 "shipping": shipping_tag,
+                "interest": interest_tag,
             }
             if not hasattr(run_once, "_reports"):
                 run_once._reports = {}

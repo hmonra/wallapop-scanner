@@ -326,7 +326,7 @@ def notify(cfg, items_to_report, search_name):
         lines.append(f"  {it['title']}")
         lines.append(f"  Precio: {it['price']} EUR  |  {it['location']}")
         lines.append(f"  Vendedor: {it['seller']}  ({it['seller_info']})")
-        lines.append(f"  Publicado: {it['age']}")
+        lines.append(f"  Publicado: {it['age']}  |  {it['shipping']}")
         lines.append(f"  {it['url']}")
 
     msg = "\n".join(lines)
@@ -360,7 +360,7 @@ def notify(cfg, items_to_report, search_name):
             f"{header}\n"
             f"🔔 <a href=\"{it['url']}\">{it['title']}</a>\n"
             f"💶 {it['price']} EUR  📍 {it['location']}\n"
-            f"👤 {it['seller']} ({it['seller_info']}) · {it['age']}"
+            f"👤 {it['seller']} ({it['seller_info']}) · {it['age']} · {it['shipping']}"
         )
         if len(tg) > 4000:
             tg = tg[:3990] + "..."
@@ -466,6 +466,12 @@ def run_once(cfg, initial=False):
             seller_info = f"top={ (user or {}).get('is_top_profile') }"
             seller_info += f" | pub={counters['publish']} vend={counters['sells']} comp={counters['buys']}"
 
+            # Modo de venta: si el vendedor NO acepta envio, es solo en persona
+            # (recogida en mano). Util para descartar vendedores lejanos.
+            ship = it.get("shipping", {})
+            allows_shipping = ship.get("user_allows_shipping", True) if isinstance(ship, dict) else True
+            shipping_tag = "📦 Envío" if allows_shipping else "🤝 Solo en persona"
+
             seen.add(it["id"])
             new_count += 1
             it_url = f"https://es.wallapop.com/item/{it.get('web_slug', it['id'])}"
@@ -477,6 +483,7 @@ def run_once(cfg, initial=False):
                 "seller_info": seller_info,
                 "age": format_age(age_h),
                 "url": it_url,
+                "shipping": shipping_tag,
             }
             if not hasattr(run_once, "_reports"):
                 run_once._reports = {}

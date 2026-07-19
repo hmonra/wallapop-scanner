@@ -34,6 +34,7 @@
     }
   ],
   "filters": {
+    "enable_antifake": false,
     "max_new_account_age_days": 30,
     "min_seller_published": 0,
     "require_top_profile_or_sales": false,

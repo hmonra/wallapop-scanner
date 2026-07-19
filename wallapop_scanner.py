@@ -174,15 +174,14 @@ def get_user_stats(user_id):
 def user_is_suspicious(user, stats, filters, now_ms):
     """Devuelve (es_sospechoso, motivo, contadores).
 
-    El objetivo es detectar las cuentas "fake"/inactivas que describes:
-    perfiles creados expresamente para colgar un anuncio y que luego nadie
-    responde. Wallapop NO expone la ultima conexion en su API, asi que usamos
-    senales publicas: cuenta muy reciente + cero actividad de compra/venta.
+    Por defecto el filtro anti-fake esta DESACTIVADO: no se descarta a nadie,
+    porque un vendedor real puede acabar de crear la cuenta para subir justo
+    ese anuncio y no queremos perdernos la ganga. Los contadores del vendedor
+    se siguen mostrando en el aviso para que TU decidas si escribirle.
+
+    Para reactivarlo: pon "enable_antifake": true en config.json -> filters.
     """
     counters = {"publish": 0, "sells": 0, "buys": 0, "reviews": 0}
-    if user is None:
-        return True, "no se pudo obtener el vendedor", counters
-
     if stats:
         c = stats.get("counters", {})
         if isinstance(c, dict):
@@ -193,32 +192,29 @@ def user_is_suspicious(user, stats, filters, now_ms):
                 if isinstance(entry, dict) and "type" in entry:
                     counters[entry.get("type")] = entry.get("value") or 0
 
+    if not filters.get("enable_antifake", False):
+        return False, "", counters
+
     published = counters["publish"]
     sells = counters["sells"]
     buys = counters["buys"]
     reviews = counters["reviews"]
 
-    # 1) Cuenta recien creada (los "fake" suelen ser cuentas nuevas)
     reg = user.get("register_date")
     if reg:
         age_days = (now_ms - reg) / 86400000.0
         max_new = filters.get("max_new_account_age_days", 30)
-        if age_days < max_new:
-            # Si ademas no tiene actividad -> casi seguro fake
-            if sells == 0 and buys == 0 and reviews == 0:
-                return True, f"cuenta de solo {age_days:.0f} dias y sin actividad", counters
+        if age_days < max_new and sells == 0 and buys == 0 and reviews == 0:
+            return True, f"cuenta de solo {age_days:.0f} dias y sin actividad", counters
 
-    # 2) Exigir un minimo de anuncios publicados (opcional)
     min_published = filters.get("min_seller_published", 0)
     if min_published > 0 and published < min_published:
         return True, f"solo {published} anuncios publicados", counters
 
-    # 3) Modo estricto: exigir perfil top O al menos 1 venta
     if filters.get("require_top_profile_or_sales", False):
         if not user.get("is_top_profile") and sells == 0:
             return True, "sin ventas ni perfil top (posible cuenta fake)", counters
 
-    # 4) Sin ninguna actividad en absoluto (solo si TENEMOS los datos del vendedor)
     if stats is not None and sells == 0 and buys == 0 and reviews == 0 and published == 0:
         return True, "sin historial de actividad (posible cuenta fake)", counters
 

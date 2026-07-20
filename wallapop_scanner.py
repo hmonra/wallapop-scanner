@@ -607,6 +607,11 @@ def main():
         return
 
     cfg = load_config()
+    # El token de Telegram se inyecta como variable de entorno (GitHub Secret)
+    # para NO commitearlo en repos publicos. Si existe la env, la usamos.
+    env_token = os.environ.get("TELEGRAM_BOT_TOKEN")
+    if env_token:
+        cfg.setdefault("notifications", {}).setdefault("telegram", {})["bot_token"] = env_token
     interval = cfg.get("check_interval_seconds", 60)
 
     print(f"=== Wallapop Scanner iniciado ===")

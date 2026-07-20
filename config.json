@@ -110,7 +110,7 @@
     "log_file": "alerts.log",
     "telegram": {
       "enabled": true,
-      "bot_token": "8657645526:AAEpjZPJEIQ1WiE-uue3t4bN5qXifBZGybc",
+      "bot_token": "",
       "chat_id": "179958235"
     },
     "desktop": true

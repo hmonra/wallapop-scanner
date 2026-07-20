@@ -2,15 +2,15 @@ name: Wallapop Scanner
 
 on:
   schedule:
-    # 5 arranques al dia (cada 5h) para cubrir 24/7 SIN HUECOS. Cada arranque
-    # corre el script en bucle hasta el timeout de 360 min (6h), asi que hay
-    # ~1h de solape con el siguiente: si uno muere antes de tiempo, el otro
-    # ya esta vivo y no se pierde ningun escaneo.
+    # 4 arranques al dia (cada 6h), sin solape. Cada arranque vive hasta el
+    # timeout de 360 min (6h) y muere justo antes de que arranque el siguiente,
+    # asi NO hay dos ejecuciones a la vez (evita duplicados y el contador del
+    # latido se mantiene limpio y creciente). Si un run cae antes de tiempo,
+    # el watchdog lo mata y el siguiente cron (6h despues) retoma.
     - cron: "0 0 * * *"
-    - cron: "0 5 * * *"
-    - cron: "0 10 * * *"
-    - cron: "0 15 * * *"
-    - cron: "20 20 * * *"
+    - cron: "0 6 * * *"
+    - cron: "0 12 * * *"
+    - cron: "0 18 * * *"
   workflow_dispatch:
 
 permissions:

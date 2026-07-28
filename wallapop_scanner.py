@@ -298,7 +298,7 @@ def log_telegram(line):
         pass
 
 
-def send_telegram(cfg, message):
+def send_telegram(cfg, message, disable_notification=None):
     t = cfg.get("notifications", {}).get("telegram", {})
     if not t.get("enabled"):
         return False
@@ -321,11 +321,14 @@ def send_telegram(cfg, message):
                 pass
     if not chat_id:
         return False
-    # Silencio nocturno: de 22:00 a 08:00 (hora peninsular ES) mandamos sin
-    # sonido/vibracion (disable_notification). El mensaje igual aparece en
-    # pantalla si tienes el movil en mano, pero no te despierta.
-    es_hour = (datetime.now(timezone.utc).hour + 2) % 24
-    silent = 22 <= es_hour or es_hour < 8
+    # Por defecto: silencio nocturno de 22:00 a 08:00 (hora peninsular ES).
+    # Si disable_notification=None se aplica la regla horaria;
+    # si es True/False se fuerza ese valor.
+    if disable_notification is None:
+        es_hour = (datetime.now(timezone.utc).hour + 2) % 24
+        silent = 22 <= es_hour or es_hour < 8
+    else:
+        silent = disable_notification
     last_err = None
     for attempt in range(3):
         try:
@@ -402,7 +405,7 @@ def notify(cfg, items_to_report, search_name):
         )
         if len(tg) > 4000:
             tg = tg[:3990] + "..."
-        ok = send_telegram(cfg, tg)
+        ok = send_telegram(cfg, tg, disable_notification=False)
         if ok:
             tg_sent += 1
         time.sleep(0.5)
@@ -584,7 +587,7 @@ def run_once(cfg, initial=False):
             msg = (f"💓 <b>Wallapop Scanner - latido</b>\n"
                    f"Pasada #{pass_count} realizada. 0 mandos nuevos encontrados.\n"
                    f"El scanner sigue activo y vigilando.")
-            ok = send_telegram(cfg, msg)
+            ok = send_telegram(cfg, msg, disable_notification=True)
             print(f"  [i] Heartbeat enviado: {ok} (pass {pass_count}, every {every})")
 
     print(f"[+] Pasada completada. {new_count} nuevo(s) anuncio(s) en Total.")

@@ -405,7 +405,7 @@ def notify(cfg, items_to_report, search_name):
         )
         if len(tg) > 4000:
             tg = tg[:3990] + "..."
-        ok = send_telegram(cfg, tg, disable_notification=False)
+        ok = send_telegram(cfg, tg)
         if ok:
             tg_sent += 1
         time.sleep(0.5)

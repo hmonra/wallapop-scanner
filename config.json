@@ -157,6 +157,6 @@
   "initial_send_count": 10,
   "heartbeat": {
     "enabled": true,
-    "every_n_passes": 6
+    "every_n_passes": 10
   }
 }

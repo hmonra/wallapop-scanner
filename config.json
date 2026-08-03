@@ -1,5 +1,5 @@
 {
-  "check_interval_seconds": 300,
+  "check_interval_seconds": 180,
   "location": {
     "latitude": 39.4309,
     "longitude": -0.4006,

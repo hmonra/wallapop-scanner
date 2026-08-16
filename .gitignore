@@ -1,8 +1,16 @@
 telegram.log
 alerts.log
 __pycache__/
-*.pyc
+*.py[cod]
+*.pyo
 images.jfif
 SECRETS.txt
 seen_items.json
 RESUMEN.md
+
+# ---- IDE / local ----
+.idea/
+.vscode/
+.env
+chromedriver.exe
+*.exe

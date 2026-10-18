@@ -126,22 +126,34 @@ def search_items(keywords, min_price, max_price, order_by, location):
         "longitude": location["longitude"],
         "country_code": location.get("country_code", "ES"),
     }
-    try:
-        r = requests.get(f"{API_BASE}/search", params=params, headers=HEADERS, timeout=20)
-        r.raise_for_status()
-        data = r.json()
-    except Exception as e:
-        print(f"  [!] Error en búsqueda '{keywords}': {e}")
-        return []
+    data = None
+    for attempt in range(3):
+        try:
+            r = requests.get(f"{API_BASE}/search", params=params, headers=HEADERS, timeout=20)
+            if r.status_code == 429:
+                wait = 5 * (attempt + 1)
+                print(f"  [!] Rate limit (429) en búsqueda '{keywords}'. Esperando {wait}s...")
+                time.sleep(wait)
+                continue
+            r.raise_for_status()
+            data = r.json()
+            break
+        except Exception as e:
+            print(f"  [!] Error en búsqueda '{keywords}': {e}")
+            if attempt < 2:
+                time.sleep(2)
+                continue
+            return []
 
     items = []
-    section = data.get("data", {}).get("section")
-    if section and isinstance(section, dict):
-        payload = section.get("payload", {})
-        items = payload.get("items", []) if isinstance(payload, dict) else []
-    # Fallback por si la estructura cambia
-    if not items:
-        items = data.get("data", {}).get("items", []) or data.get("search_objects", [])
+    if data:
+        section = data.get("data", {}).get("section")
+        if section and isinstance(section, dict):
+            payload = section.get("payload", {})
+            items = payload.get("items", []) if isinstance(payload, dict) else []
+        # Fallback por si la estructura cambia
+        if not items:
+            items = data.get("data", {}).get("items", []) or data.get("search_objects", [])
     return items
 
 

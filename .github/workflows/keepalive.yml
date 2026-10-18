@@ -1,0 +1,30 @@
+name: Keep repo alive
+
+# Workflow independiente cuyo unico objetivo es mantener el repo "activo"
+# para que GitHub no deshabilite los workflows programados por inactividad
+# (politica de GitHub: 60 dias sin commits => desactiva los crons).
+# No toca ni afecta al scanner principal.
+
+on:
+  schedule:
+    - cron: "0 0 1 * *"      # 1 de cada mes, 00:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Commit heartbeat
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          echo "last keepalive: $(date -u)" > keepalive.txt
+          git add keepalive.txt
+          git commit -m "chore: keep repo alive" || echo "nothing to commit"
+          git push

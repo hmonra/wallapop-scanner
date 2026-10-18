@@ -32,7 +32,7 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Run scanner (bucle continuo, cada 5 min)
+      - name: Run scanner (bucle continuo, cada 3 min)
         env:
           GITHUB_TOKEN: ${{ secrets.GIST_TOKEN }}
           WALLAPOP_GIST_ID: ${{ secrets.WALLAPOP_GIST_ID }}

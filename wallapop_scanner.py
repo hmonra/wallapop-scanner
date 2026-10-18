@@ -80,7 +80,7 @@ def load_state(state_file):
                 if state_file in files:
                     return json.loads(files[state_file]["content"])
         except Exception as e:
-            print(f"  [!] No se pudo cargar estado del Gist: {e}")
+            log_error(f"No se pudo cargar estado del Gist: {e}", key="gist_load")
     path = os.path.join(BASE_DIR, state_file)
     if os.path.exists(path):
         with open(path, "r", encoding="utf-8") as f:
@@ -104,10 +104,10 @@ def save_state(state_file, state):
                 timeout=15,
             )
             if r.status_code not in (200, 201):
-                print(f"  [!] No se pudo guardar estado en Gist: {r.status_code}")
+                log_error(f"No se pudo guardar estado en Gist: {r.status_code}", key="gist_save")
             return
         except Exception as e:
-            print(f"  [!] Error guardando estado en Gist: {e}")
+            log_error(f"Error guardando estado en Gist: {e}", key="gist_save")
     path = os.path.join(BASE_DIR, state_file)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(state, f, ensure_ascii=False, indent=2)
@@ -139,10 +139,11 @@ def search_items(keywords, min_price, max_price, order_by, location):
             data = r.json()
             break
         except Exception as e:
-            print(f"  [!] Error en búsqueda '{keywords}': {e}")
             if attempt < 2:
+                print(f"  [!] Error en búsqueda '{keywords}': {e}")
                 time.sleep(2)
                 continue
+            log_error(f"Error en búsqueda '{keywords}': {e}", key=f"search:{keywords}")
             return []
 
     items = []
@@ -168,10 +169,11 @@ def _get_json(url, retries=3):
                 continue
             r.raise_for_status()
             return r.json()
-        except Exception:
+        except Exception as e:
             if attempt < retries - 1:
                 time.sleep(2)
                 continue
+            log_error(f"Error obteniendo {url}: {e}", key="api_detail")
             return None
     return None
 
@@ -361,6 +363,33 @@ def send_telegram(cfg, message, disable_notification=None):
         time.sleep(1)
     print(f"  [!] Telegram NO enviado: {last_err}")
     return False
+
+
+CFG = None
+_ERROR_LAST_SENT = {}
+_ERROR_COOLDOWN = 900  # 15 min entre reenvios del mismo error
+
+
+def log_error(message, key=None):
+    """Imprime el error por consola y lo envia a Telegram en silencio (como log).
+
+    No suena ni vibra (disable_notification=True). Errores identicos se
+    reenvian como mucho una vez cada _ERROR_COOLDOWN segundos para no saturar.
+    """
+    print(f"  [!] {message}")
+    if CFG is None:
+        return
+    if key is None:
+        key = message
+    now = time.time()
+    if now - _ERROR_LAST_SENT.get(key, 0) < _ERROR_COOLDOWN:
+        return
+    _ERROR_LAST_SENT[key] = now
+    try:
+        send_telegram(CFG, f"⚠️ <b>Wallapop Scanner - error</b>\n{message}",
+                      disable_notification=True)
+    except Exception:
+        pass
 
 
 def notify(cfg, items_to_report, search_name):
@@ -622,6 +651,8 @@ def main():
         return
 
     cfg = load_config()
+    global CFG
+    CFG = cfg
     # El token de Telegram se inyecta como variable de entorno (GitHub Secret)
     # para NO commitearlo en repos publicos. Si existe la env, la usamos.
     env_token = os.environ.get("TELEGRAM_BOT_TOKEN")
@@ -644,6 +675,7 @@ def main():
 
     def _watchdog():
         print(f"[!] Watchdog: pasada bloqueada > {PASS_TIMEOUT}s. Abortando proceso.")
+        log_error(f"Watchdog: pasada bloqueada > {PASS_TIMEOUT}s. Abortando proceso.", key="watchdog")
         os._exit(1)
 
     while True:
@@ -653,7 +685,7 @@ def main():
         try:
             run_once(cfg, initial=(first and args.initial))
         except Exception as e:
-            print(f"[!] Error inesperado: {e}")
+            log_error(f"Error inesperado: {e}", key="loop")
         finally:
             timer.cancel()
         first = False
